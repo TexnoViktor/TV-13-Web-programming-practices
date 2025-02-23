@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Результати</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav>
+        <a href="/">Головна</a>
+        <a href="/task1">Завдання 1</a>
+        <a href="/task2">Завдання 2</a>
+    </nav>
+    <h1>Результати розрахунків</h1>
+
+    <div class="task-results">
+        <h2>Результати Завдання 1</h2>
+        <p>Коефіцієнт K<sup>РС</sup>: {{printf "%.2f" .Task1.Kpc}}</p>
+        <p>Коефіцієнт K<sup>РГ</sup>: {{printf "%.2f" .Task1.Kpg}}</p>
+
+        <h3>Склад сухої маси:</h3>
+        <ul>
+            <li>H: {{printf "%.2f" .Task1.DryComposition.H}}%</li>
+            <li>C: {{printf "%.2f" .Task1.DryComposition.C}}%</li>
+            <li>S: {{printf "%.2f" .Task1.DryComposition.S}}%</li>
+            <li>N: {{printf "%.2f" .Task1.DryComposition.N}}%</li>
+            <li>O: {{printf "%.2f" .Task1.DryComposition.O}}%</li>
+            <li>A: {{printf "%.2f" .Task1.DryComposition.A}}%</li>
+        </ul>
+
+        <h3>Склад горючої маси:</h3>
+        <ul>
+            <li>H: {{printf "%.2f" .Task1.CombComposition.H}}%</li>
+            <li>C: {{printf "%.2f" .Task1.CombComposition.C}}%</li>
+            <li>S: {{printf "%.2f" .Task1.CombComposition.S}}%</li>
+            <li>N: {{printf "%.2f" .Task1.CombComposition.N}}%</li>
+            <li>O: {{printf "%.2f" .Task1.CombComposition.O}}%</li>
+        </ul>
+
+        <h3>Теплота згоряння:</h3>
+        <ul>
+            <li>Робоча маса (Q<sub>H</sub><sup>P</sup>): {{printf "%.2f" .Task1.Qpn}} МДж/кг</li>
+            <li>Суха маса (Q<sub>H</sub><sup>d</sup>): {{printf "%.2f" .Task1.Qdn}} МДж/кг</li>
+            <li>Горюча маса (Q<sub>H</sub><sup>a</sup>): {{printf "%.2f" .Task1.Qan}} МДж/кг</li>
+        </ul>
+    </div>
+
+    <div class="task-results">
+        <h2>Результати Завдання 2</h2>
+        <h3>Склад робочої маси мазуту:</h3>
+        <ul>
+            <li>Вуглець (C): {{printf "%.2f" .Task2.CWork}}%</li>
+            <li>Водень (H): {{printf "%.2f" .Task2.HWork}}%</li>
+            <li>Кисень (O): {{printf "%.2f" .Task2.OWork}}%</li>
+            <li>Сірка (S): {{printf "%.2f" .Task2.SWork}}%</li>
+            <li>Зола (A): {{printf "%.2f" .Task2.AWork}}%</li>
+            <li>Ванадій (V): {{printf "%.2f" .Task2.VWork}} мг/кг</li>
+        </ul>
+
+        <h3>Теплота згоряння:</h3>
+        <ul>
+            <li>Робоча маса (Q<sub>H</sub><sup>P</sup>): {{printf "%.2f" .Task2.QWork}} МДж/кг</li>
+        </ul>
+    </div>
+</body>
+</html>

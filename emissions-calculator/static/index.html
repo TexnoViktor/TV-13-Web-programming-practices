@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор викидів</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
+        }
+        .results table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .results th, .results td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .results th {
+            background-color: #f8f8f8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Калькулятор викидів шкідливих речовин</h1>
+        <div class="form-group">
+            <label for="coalAmount">Кількість вугілля (тонн):</label>
+            <input type="number" id="coalAmount" value="412407.75" step="0.01">
+        </div>
+        <div class="form-group">
+            <label for="fuelOilAmount">Кількість мазуту (тонн):</label>
+            <input type="number" id="fuelOilAmount" value="175657.21" step="0.01">
+        </div>
+        <div class="form-group">
+            <label for="naturalGasAmount">Кількість природного газу (м³):</label>
+            <input type="number" id="naturalGasAmount" value="195337.23" step="0.01">
+        </div>
+        <button onclick="calculateEmissions()">Розрахувати</button>
+        
+        <div id="results" class="results">
+            <h2>Результати розрахунку</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Паливо</th>
+                        <th>Показник емісії (г/ГДж)</th>
+                        <th>Валовий викид (т)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Вугілля</td>
+                        <td id="coalFactor">-</td>
+                        <td id="coalEmission">-</td>
+                    </tr>
+                    <tr>
+                        <td>Мазут</td>
+                        <td id="fuelOilFactor">-</td>
+                        <td id="fuelOilEmission">-</td>
+                    </tr>
+                    <tr>
+                        <td>Природний газ</td>
+                        <td id="naturalGasFactor">-</td>
+                        <td id="naturalGasEmission">-</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function calculateEmissions() {
+            const data = {
+                coalAmount: parseFloat(document.getElementById('coalAmount').value),
+                fuelOilAmount: parseFloat(document.getElementById('fuelOilAmount').value),
+                naturalGasAmount: parseFloat(document.getElementById('naturalGasAmount').value)
+            };
+
+            try {
+                const response = await fetch('/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                // Display results
+                document.getElementById('coalFactor').textContent = 
+                    result.coalEmission.emissionFactor.toFixed(2);
+                document.getElementById('coalEmission').textContent = 
+                    result.coalEmission.totalEmission.toFixed(2);
+                
+                document.getElementById('fuelOilFactor').textContent = 
+                    result.fuelOilEmission.emissionFactor.toFixed(2);
+                document.getElementById('fuelOilEmission').textContent = 
+                    result.fuelOilEmission.totalEmission.toFixed(2);
+                
+                document.getElementById('naturalGasFactor').textContent = '0.00';
+                document.getElementById('naturalGasEmission').textContent = '0.00';
+
+                // Show results section
+                document.getElementById('results').style.display = 'block';
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Помилка при розрахунку. Перевірте консоль для деталей.');
+            }
+        }
+    </script>
+</body>
+</html>

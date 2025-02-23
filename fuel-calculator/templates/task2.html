@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Завдання 2</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav>
+        <a href="/">Головна</a>
+        <a href="/task1">Завдання 1</a>
+        <a href="/task2">Завдання 2</a>
+    </nav>
+    <h1>Завдання 2: Розрахунок мазуту</h1>
+    <form method="POST">
+        <label>Вуглець (C), %: <input type="number" name="CComb" step="0.1" required></label><br>
+        <label>Водень (H), %: <input type="number" name="HComb" step="0.1" required></label><br>
+        <label>Кисень (O), %: <input type="number" name="OComb" step="0.1" required></label><br>
+        <label>Сірка (S), %: <input type="number" name="SComb" step="0.1" required></label><br>
+        <label>Вологість (W), %: <input type="number" name="W" step="0.1" required></label><br>
+        <label>Зольність (A), %: <input type="number" name="A" step="0.01" required></label><br>
+        <label>Ванадій (V), мг/кг: <input type="number" name="V" step="0.1" required></label><br>
+        <label>Теплота згоряння (Q), МДж/кг: <input type="number" name="QComb" step="0.1" required></label><br>
+        <button type="submit">Розрахувати</button>
+    </form>
+</body>
+</html>
