@@ -19,9 +19,13 @@ type Request struct {
 
 // Результати розрахунку
 type Response struct {
-	DeltaW1     float64 `json:"deltaW1"`
-	DeltaW2     float64 `json:"deltaW2"`
-	TotalProfit float64 `json:"totalProfit"`
+	DeltaW1       float64 `json:"deltaW1"`
+	DeltaW2       float64 `json:"deltaW2"`
+	ProfitBefore  float64 `json:"profitBefore"`  // Додано
+	PenaltyBefore float64 `json:"penaltyBefore"` // Додано
+	ProfitAfter   float64 `json:"profitAfter"`   // Додано
+	PenaltyAfter  float64 `json:"penaltyAfter"`  // Додано
+	TotalProfit   float64 `json:"totalProfit"`
 }
 
 // Функція помилок (error function)
@@ -66,18 +70,23 @@ func calculateHandler(w http.ResponseWriter, r *http.Request) {
 	deltaW1 := calculateDeltaW(req.Sigma1, req.Pc)
 	deltaW2 := calculateDeltaW(req.Sigma2, req.Pc)
 
-	profit1 := req.Pc * 24 * deltaW1 * req.Price * 1000
-	penalty1 := req.Pc * 24 * (1 - deltaW1) * req.Price * 1000
+	// Розрахунок прибутків та штрафів
+	profitBefore := req.Pc * 24 * deltaW1 * req.Price * 1000
+	penaltyBefore := req.Pc * 24 * (1 - deltaW1) * req.Price * 1000
 
-	profit2 := req.Pc * 24 * deltaW2 * req.Price * 1000
-	penalty2 := req.Pc * 24 * (1 - deltaW2) * req.Price * 1000
+	profitAfter := req.Pc * 24 * deltaW2 * req.Price * 1000
+	penaltyAfter := req.Pc * 24 * (1 - deltaW2) * req.Price * 1000
 
-	totalProfit := (profit2 - penalty2) - (profit1 - penalty1)
+	totalProfit := (profitAfter - penaltyAfter) - (profitBefore - penaltyBefore)
 
 	response := Response{
-		DeltaW1:     deltaW1 * 100,
-		DeltaW2:     deltaW2 * 100,
-		TotalProfit: totalProfit,
+		DeltaW1:       deltaW1 * 100,
+		DeltaW2:       deltaW2 * 100,
+		ProfitBefore:  profitBefore,
+		PenaltyBefore: penaltyBefore,
+		ProfitAfter:   profitAfter,
+		PenaltyAfter:  penaltyAfter,
+		TotalProfit:   totalProfit,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

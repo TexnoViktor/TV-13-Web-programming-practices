@@ -50,17 +50,30 @@
             const data = await response.json();
             
             const resultHTML = `
-                <h3>Результати:</h3>
-                <p>Прибуток після вдосконалення: <strong>${data.totalProfit.toFixed(1)} тис. грн</strong></p>
-                <p>Деталі розрахунків:</p>
-                <ul>
-                    <li>Частка без небалансів (до): ${data.deltaW1.toFixed(1)}%</li>
-                    <li>Частка без небалансів (після): ${data.deltaW2.toFixed(1)}%</li>
-                </ul>
-            `;
+            <h3>Результати:</h3>
+            <p>Прибуток після вдосконалення: <strong>${data.totalProfit.toFixed(1)} тис. грн</strong></p>
             
-            document.getElementById('result').innerHTML = resultHTML;
-        }
-    </script>
+            <h4>До вдосконалення:</h4>
+            <ul>
+                <li>Прибуток: ${data.profitBefore.toFixed(1)} грн</li>
+                <li>Штраф за небаланси: ${data.penaltyBefore.toFixed(1)} грн</li>
+            </ul>
+            
+            <h4>Після вдосконалення:</h4>
+            <ul>
+                <li>Прибуток: ${data.profitAfter.toFixed(1)} грн</li>
+                <li>Штраф за небаланси: ${data.penaltyAfter.toFixed(1)} грн</li>
+            </ul>
+            
+            <p>Частка без небалансів:</p>
+            <ul>
+                <li>До: ${data.deltaW1.toFixed(1)}%</li>
+                <li>Після: ${data.deltaW2.toFixed(1)}%</li>
+            </ul>
+        `;
+        
+        document.getElementById('result').innerHTML = resultHTML;
+    }
+</script>
 </body>
 </html>
