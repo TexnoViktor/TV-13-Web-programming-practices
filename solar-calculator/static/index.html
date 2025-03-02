@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Калькулятор прибутку СЕС</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="calculator">
+        <h2>Калькулятор прибутку сонячної електростанції</h2>
+        
+        <div class="input-group">
+            <label>Середньодобова потужність (Pc), МВт:</label>
+            <input type="number" id="pc" step="0.1" value="5">
+        </div>
+        
+        <div class="input-group">
+            <label>Початкова похибка (σ1), МВт:</label>
+            <input type="number" id="sigma1" step="0.1" value="1">
+        </div>
+        
+        <div class="input-group">
+            <label>Покращена похибка (σ2), МВт:</label>
+            <input type="number" id="sigma2" step="0.1" value="0.25">
+        </div>
+        
+        <div class="input-group">
+            <label>Вартість електроенергії (B), грн/кВт·год:</label>
+            <input type="number" id="price" step="0.1" value="7">
+        </div>
+        
+        <button onclick="calculate()">Розрахувати</button>
+        
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        async function calculate() {
+            const pc = parseFloat(document.getElementById('pc').value);
+            const sigma1 = parseFloat(document.getElementById('sigma1').value);
+            const sigma2 = parseFloat(document.getElementById('sigma2').value);
+            const price = parseFloat(document.getElementById('price').value);
+
+            const response = await fetch('/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pc, sigma1, sigma2, price }),
+            });
+
+            const data = await response.json();
+            
+            const resultHTML = `
+                <h3>Результати:</h3>
+                <p>Прибуток після вдосконалення: <strong>${data.totalProfit.toFixed(1)} тис. грн</strong></p>
+                <p>Деталі розрахунків:</p>
+                <ul>
+                    <li>Частка без небалансів (до): ${data.deltaW1.toFixed(1)}%</li>
+                    <li>Частка без небалансів (після): ${data.deltaW2.toFixed(1)}%</li>
+                </ul>
+            `;
+            
+            document.getElementById('result').innerHTML = resultHTML;
+        }
+    </script>
+</body>
+</html>
