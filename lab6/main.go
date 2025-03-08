@@ -1,8 +1,6 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"html/template"
 	"log"
 	"math"
@@ -10,648 +8,463 @@ import (
 	"strconv"
 )
 
-// ElectricalDevice представляє електроприймач
-type ElectricalDevice struct {
-	Name           string  `json:"name"`
-	Efficiency     float64 `json:"efficiency"`     // ηн - коефіцієнт корисної дії
-	PowerFactor    float64 `json:"powerFactor"`    // cos φ - коефіцієнт потужності
-	Voltage        float64 `json:"voltage"`        // Uн - напруга, кВ
-	Quantity       int     `json:"quantity"`       // n - кількість, шт
-	Power          float64 `json:"power"`          // Pн - номінальна потужність, кВт
-	UsageFactor    float64 `json:"usageFactor"`    // КВ - коефіцієнт використання
-	ReactiveFactor float64 `json:"reactiveFactor"` // tgφ - коефіцієнт реактивної потужності
+// EquipmentInput represents input parameters for a single piece of equipment
+type EquipmentInput struct {
+	Name              string  // Найменування ЕП
+	Efficiency        float64 // ηн - номінальне значення коефіцієнта корисної дії ЕП
+	PowerFactor       float64 // cos φ - коефіцієнт потужності навантаження
+	Voltage           float64 // Uн - напруга навантаження, кВ
+	Quantity          int     // n - кількість ЕП, шт
+	Power             float64 // Рн - номінальна потужність ЕП, кВт
+	UsageCoef         float64 // КВ - коефіцієнт використання
+	ReactivePowerCoef float64 // tgφ - коефіцієнт реактивної потужності
 }
 
-// DeviceCalculation містить результати розрахунків для одного електроприймача
-type DeviceCalculation struct {
-	Device              ElectricalDevice // Вхідні дані пристрою
-	NPower              float64          // n * Pн, кВт
-	Current             float64          // Ip - розрахунковий струм, A
-	NPowerUsage         float64          // n * Pн * КВ, кВт
-	NPowerUsageReactive float64          // n * Pн * КВ * tgφ, квар
-	NPowerSquared       float64          // n * Pн^2
+// EquipmentOutput represents calculated parameters for a single piece of equipment
+type EquipmentOutput struct {
+	EquipmentInput
+	PowerTotal     float64 // n·Pн, кВт
+	PowerWithUsage float64 // n·Pн·КВ, кВт
+	ReactivePower  float64 // n·Pн·КВ·tgφ, квар
+	PowerSquared   float64 // n·Pн², кВт²
+	CurrentRated   float64 // Ip - розрахунковий струм, А
 }
 
-// GroupCalculation містить результати групових розрахунків
-type GroupCalculation struct {
-	Name                 string              // Назва групи (ШР1, ШР2 тощо)
-	Devices              []DeviceCalculation // Пристрої групи
-	TotalQuantity        int                 // Загальна кількість пристроїв
-	TotalPower           float64             // Сумарна номінальна потужність
-	UsageFactor          float64             // КВ - груповий коефіцієнт використання
-	EffectiveDeviceCount float64             // ne - ефективна кількість пристроїв
-	PowerFactor          float64             // Кр - розрахунковий коефіцієнт активної потужності
-	ActivePower          float64             // Pp - розрахункове активне навантаження, кВт
-	ReactivePower        float64             // Qp - розрахункове реактивне навантаження, квар
-	TotalPowerApparent   float64             // Sp - повна потужність, кВА
-	GroupCurrent         float64             // Ip - розрахунковий груповий струм, А
+// BusOutput represents calculated parameters for a distribution bus (ШР)
+type BusOutput struct {
+	Name                     string
+	Equipment                []EquipmentOutput
+	UsageCoefGroup           float64 // КВ - груповий коефіцієнт використання
+	EffectiveQuantity        float64 // ne - ефективна кількість ЕП
+	EffectiveQuantityRounded int     // ne rounded
+	PowerCoef                float64 // Kр - розрахунковий коефіцієнт активної потужності
+	ActivePower              float64 // Pp - розрахункове активне навантаження, кВт
+	ReactivePower            float64 // Qp - розрахункове реактивне навантаження, квар
+	ApparentPower            float64 // Sp - повна потужність, кВА
+	BusCurrent               float64 // Ip - розрахунковий груповий струм, А
 }
 
-// TotalCalculation містить підсумкові результати розрахунків
-type TotalCalculation struct {
-	Groups               []GroupCalculation // Групи розрахунків (ШР1, ШР2, ШР3)
-	TotalQuantity        int                // Загальна кількість пристроїв
-	TotalPower           float64            // Сумарна номінальна потужність
-	UsageFactor          float64            // КВ - коефіцієнт використання цеху в цілому
-	EffectiveDeviceCount float64            // ne - ефективна кількість пристроїв цеху
-	PowerFactor          float64            // Кр - розрахунковий коефіцієнт активної потужності
-	ActivePower          float64            // Pp - розрахункове активне навантаження, кВт
-	ReactivePower        float64            // Qp - розрахункове реактивне навантаження, квар
-	TotalPowerApparent   float64            // Sp - повна потужність, кВА
-	TotalCurrent         float64            // Ip - розрахунковий груповий струм, А
+// WorkshopOutput represents calculated parameters for the entire workshop
+type WorkshopOutput struct {
+	Buses                         []BusOutput
+	LargeEquipment                []EquipmentOutput
+	UsageCoefTotal                float64 // КВ - загальний коефіцієнт використання
+	EffectiveQuantityTotal        float64 // ne - загальна ефективна кількість ЕП
+	EffectiveQuantityTotalRounded int     // ne rounded
+	PowerCoefTotal                float64 // Kр - загальний розрахунковий коефіцієнт активної потужності
+	ActivePowerTotal              float64 // Pp - загальне розрахункове активне навантаження, кВт
+	ReactivePowerTotal            float64 // Qp - загальне розрахункове реактивне навантаження, квар
+	ApparentPowerTotal            float64 // Sp - загальна повна потужність, кВА
+	TotalCurrent                  float64 // Ip - загальний розрахунковий струм, А
 }
 
-// CalculatePowerFactor визначає коефіцієнт Kр за таблицями
-func CalculatePowerFactor(usageFactor, effectiveDeviceCount float64, isHighLevel bool) float64 {
-	// Округлюємо ne до найближчого меншого цілого числа
-	ne := math.Floor(effectiveDeviceCount)
+// CalculateEquipmentOutput calculates all parameters for a piece of equipment
+func CalculateEquipmentOutput(input EquipmentInput) EquipmentOutput {
+	output := EquipmentOutput{EquipmentInput: input}
 
-	if isHighLevel {
-		// Використовуємо таблицю 6.4 для високого рівня (T0 = 2,5 год.)
-		if ne >= 50 {
-			if usageFactor >= 0.7 {
+	// Calculate n·Pн
+	output.PowerTotal = float64(input.Quantity) * input.Power
+
+	// Calculate n·Pн·КВ
+	output.PowerWithUsage = output.PowerTotal * input.UsageCoef
+
+	// Calculate n·Pн·КВ·tgφ
+	output.ReactivePower = output.PowerWithUsage * input.ReactivePowerCoef
+
+	// Calculate n·Pн²
+	output.PowerSquared = float64(input.Quantity) * math.Pow(input.Power, 2)
+
+	// Calculate Ip - розрахунковий струм
+	output.CurrentRated = (float64(input.Quantity) * input.Power) / (math.Sqrt(3) * input.Voltage * input.PowerFactor * input.Efficiency)
+
+	return output
+}
+
+// LookupPowerCoef determines the power coefficient from the lookup tables
+func LookupPowerCoef(usageCoef float64, effectiveQuantity int, isForTransformer bool) float64 {
+	// This is a simplified implementation of the table lookup
+	// In a real application, you would implement the complete lookup tables
+
+	if isForTransformer {
+		// Table 6.4 for transformers (T0 = 2.5 hour)
+		if effectiveQuantity <= 5 {
+			if usageCoef <= 0.2 {
+				return 1.0
+			} else if usageCoef <= 0.4 {
+				return 0.9
+			} else {
 				return 0.8
-			} else if usageFactor >= 0.6 {
+			}
+		} else if effectiveQuantity <= 50 {
+			if usageCoef <= 0.2 {
 				return 0.8
-			} else if usageFactor >= 0.5 {
-				return 0.75
-			} else if usageFactor >= 0.4 {
+			} else {
 				return 0.7
-			} else if usageFactor >= 0.3 {
-				return 0.7
-			} else if usageFactor >= 0.2 {
-				return 0.65
-			} else {
-				return 0.65
 			}
-		} else if ne >= 25 && ne < 50 {
-			if usageFactor >= 0.7 {
-				return 0.85
-			} else if usageFactor >= 0.6 {
-				return 0.85
-			} else if usageFactor >= 0.5 {
-				return 0.8
-			} else if usageFactor >= 0.4 {
-				return 0.75
-			} else if usageFactor >= 0.3 {
-				return 0.75
-			} else if usageFactor >= 0.2 {
-				return 0.75
-			} else {
-				return 0.75
-			}
-		} else if ne >= 10 && ne < 25 {
-			if usageFactor >= 0.7 {
-				return 0.9
-			} else if usageFactor >= 0.6 {
-				return 0.9
-			} else if usageFactor >= 0.5 {
-				return 0.85
-			} else if usageFactor >= 0.4 {
-				return 0.85
-			} else if usageFactor >= 0.3 {
-				return 0.85
-			} else if usageFactor >= 0.2 {
-				return 0.8
-			} else {
-				return 0.8
-			}
-		} else if ne >= 6 && ne < 10 {
-			if usageFactor >= 0.7 {
-				return 0.9
-			} else if usageFactor >= 0.6 {
-				return 0.92
-			} else if usageFactor >= 0.5 {
-				return 0.93
-			} else if usageFactor >= 0.4 {
-				return 0.94
-			} else if usageFactor >= 0.3 {
-				return 0.95
-			} else if usageFactor >= 0.2 {
-				return 0.96
-			} else {
-				return 0.96
-			}
-		} else if ne == 5 {
-			if usageFactor >= 0.7 {
-				return 0.93
-			} else if usageFactor >= 0.6 {
-				return 0.94
-			} else if usageFactor >= 0.5 {
-				return 0.96
-			} else if usageFactor >= 0.4 {
-				return 0.98
-			} else if usageFactor >= 0.3 {
-				return 1.0
-			} else if usageFactor >= 0.2 {
-				return 1.02
-			} else {
-				return 1.05
-			}
-		} else if ne == 4 {
-			if usageFactor >= 0.7 {
-				return 0.97
-			} else if usageFactor >= 0.6 {
-				return 1.0
-			} else if usageFactor >= 0.5 {
-				return 1.04
-			} else if usageFactor >= 0.4 {
-				return 1.06
-			} else if usageFactor >= 0.3 {
-				return 1.19
-			} else if usageFactor >= 0.2 {
-				return 1.46
-			} else {
-				return 1.73
-			}
-		} else if ne == 3 {
-			if usageFactor >= 0.7 {
-				return 1.0
-			} else if usageFactor >= 0.6 {
-				return 1.08
-			} else if usageFactor >= 0.5 {
-				return 1.14
-			} else if usageFactor >= 0.4 {
-				return 1.23
-			} else if usageFactor >= 0.3 {
-				return 1.42
-			} else if usageFactor >= 0.2 {
-				return 1.8
-			} else {
-				return 2.17
-			}
-		} else if ne == 2 {
-			if usageFactor >= 0.7 {
-				return 1.0
-			} else if usageFactor >= 0.6 {
-				return 1.11
-			} else if usageFactor >= 0.5 {
-				return 1.24
-			} else if usageFactor >= 0.4 {
-				return 1.52
-			} else if usageFactor >= 0.3 {
-				return 1.9
-			} else if usageFactor >= 0.2 {
-				return 2.69
-			} else {
-				return 3.44
-			}
-		} else if ne == 1 {
-			if usageFactor >= 0.7 {
-				return 1.14
-			} else if usageFactor >= 0.6 {
-				return 1.33
-			} else if usageFactor >= 0.5 {
-				return 1.6
-			} else if usageFactor >= 0.4 {
-				return 2.0
-			} else if usageFactor >= 0.3 {
-				return 2.67
-			} else if usageFactor >= 0.2 {
-				return 4.0
-			} else {
-				return 5.33
-			}
+		} else {
+			return 0.65
 		}
 	} else {
-		// Використовуємо таблицю 6.3 для низького рівня (T0 = 10 хв.)
-		if ne >= 100 {
-			return 1.0
-		} else if ne >= 80 {
-			if usageFactor < 0.2 {
-				return 1.0
-			} else {
-				return 1.16
-			}
-		} else if ne >= 60 {
-			if usageFactor < 0.2 {
-				return 1.0
-			} else if usageFactor < 0.4 {
-				return 1.03
-			} else {
+		// Table 6.3 for normal lines (T0 = 10 min)
+		if effectiveQuantity <= 10 {
+			if usageCoef <= 0.2 {
 				return 1.25
-			}
-		} else if ne >= 50 {
-			if usageFactor < 0.2 {
-				return 1.0
-			} else if usageFactor < 0.4 {
-				return 1.07
-			} else {
-				return 1.3
-			}
-		} else if ne >= 40 {
-			if usageFactor < 0.2 {
-				return 1.0
-			} else if usageFactor < 0.4 {
-				return 1.13
-			} else {
-				return 1.4
-			}
-		} else if ne >= 35 {
-			if usageFactor < 0.2 {
-				return 1.0
-			} else if usageFactor < 0.4 {
-				return 1.16
-			} else {
-				return 1.44
-			}
-		} else if ne >= 30 {
-			if usageFactor < 0.2 {
-				return 1.05
-			} else if usageFactor < 0.4 {
-				return 1.21
-			} else {
-				return 1.51
-			}
-		} else if ne >= 25 {
-			if usageFactor < 0.2 {
+			} else if usageCoef <= 0.4 {
+				return 1.2
+			} else if usageCoef <= 0.6 {
 				return 1.1
-			} else if usageFactor < 0.4 {
-				return 1.27
 			} else {
-				return 1.6
+				return 1.0
 			}
-		} else if ne >= 20 {
-			if usageFactor < 0.2 {
-				return 1.16
-			} else if usageFactor < 0.4 {
-				return 1.35
+		} else if effectiveQuantity <= 50 {
+			if usageCoef <= 0.2 {
+				return 1.1
 			} else {
-				return 1.72
+				return 1.0
 			}
-		} else if ne >= 18 {
-			if usageFactor < 0.2 {
-				return 1.19
-			} else if usageFactor < 0.4 {
-				return 1.39
-			} else {
-				return 1.78
-			}
-		} else if ne >= 16 {
-			if usageFactor < 0.2 {
-				return 1.23
-			} else if usageFactor < 0.4 {
-				return 1.43
-			} else {
-				return 1.85
-			}
-		} else if ne >= 14 {
-			if usageFactor < 0.2 {
-				return 1.27
-			} else if usageFactor < 0.4 {
-				return 1.49
-			} else {
-				return 1.94
-			}
-		} else if ne >= 12 {
-			if usageFactor < 0.2 {
-				return 1.32
-			} else if usageFactor < 0.4 {
-				return 1.56
-			} else {
-				return 2.04
-			}
-		} else if ne >= 10 {
-			if usageFactor < 0.2 {
-				return 1.39
-			} else if usageFactor < 0.4 {
-				return 1.65
-			} else {
-				return 2.18
-			}
-		} else if ne >= 9 {
-			if usageFactor < 0.2 {
-				return 1.43
-			} else if usageFactor < 0.4 {
-				return 1.71
-			} else {
-				return 2.27
-			}
-		} else if ne >= 8 {
-			if usageFactor < 0.2 {
-				return 1.48
-			} else if usageFactor < 0.4 {
-				return 1.78
-			} else {
-				return 2.37
-			}
-		} else if ne >= 7 {
-			if usageFactor < 0.2 {
-				return 1.54
-			} else if usageFactor < 0.4 {
-				return 1.86
-			} else {
-				return 2.49
-			}
-		} else if ne >= 6 {
-			if usageFactor < 0.2 {
-				return 1.62
-			} else if usageFactor < 0.4 {
-				return 1.96
-			} else {
-				return 2.64
-			}
-		} else if ne >= 5 {
-			if usageFactor < 0.2 {
-				return 1.72
-			} else if usageFactor < 0.4 {
-				return 2.09
-			} else {
-				return 2.84
-			}
-		} else if ne >= 4 {
-			if usageFactor < 0.2 {
-				return 1.91
-			} else if usageFactor < 0.4 {
-				return 2.35
-			} else {
-				return 3.24
-			}
-		} else if ne >= 3 {
-			if usageFactor < 0.2 {
-				return 2.31
-			} else if usageFactor < 0.4 {
-				return 2.89
-			} else {
-				return 4.06
-			}
-		} else if ne >= 2 {
-			if usageFactor < 0.2 {
-				return 3.39
-			} else if usageFactor < 0.4 {
-				return 4.33
-			} else {
-				return 6.22
-			}
-		} else if ne >= 1 {
-			if usageFactor < 0.2 {
-				return 4.0
-			} else if usageFactor < 0.4 {
-				return 5.33
-			} else {
-				return 8.0
-			}
+		} else {
+			return 1.0
 		}
 	}
-
-	// Якщо жодна умова не виконується, повертаємо значення за замовчуванням
-	return 1.0
 }
 
-// CalculateDeviceCurrent розраховує струм для одного пристрою
-func CalculateDeviceCurrent(device ElectricalDevice) float64 {
-	return float64(device.Quantity) * device.Power / (math.Sqrt(3) * device.Voltage * device.PowerFactor * device.Efficiency)
-}
-
-// CalculateGroupData обчислює групові дані для електроприймачів
-func CalculateGroupData(devices []ElectricalDevice, groupName string) GroupCalculation {
-	var group GroupCalculation
-	group.Name = groupName
-	group.Devices = make([]DeviceCalculation, len(devices))
-
-	totalQuantity := 0
-	totalPower := 0.0
-	totalPowerUsage := 0.0
-	totalPowerUsageReactive := 0.0
-	totalPowerSquared := 0.0
-
-	// Розрахунок даних для кожного пристрою в групі
-	for i, device := range devices {
-		calc := DeviceCalculation{
-			Device:              device,
-			NPower:              float64(device.Quantity) * device.Power,
-			Current:             CalculateDeviceCurrent(device),
-			NPowerUsage:         float64(device.Quantity) * device.Power * device.UsageFactor,
-			NPowerUsageReactive: float64(device.Quantity) * device.Power * device.UsageFactor * device.ReactiveFactor,
-			NPowerSquared:       float64(device.Quantity) * device.Power * device.Power,
-		}
-
-		totalQuantity += device.Quantity
-		totalPower += calc.NPower
-		totalPowerUsage += calc.NPowerUsage
-		totalPowerUsageReactive += calc.NPowerUsageReactive
-		totalPowerSquared += calc.NPowerSquared
-
-		group.Devices[i] = calc
+// CalculateBusOutput calculates all parameters for a distribution bus (ШР)
+func CalculateBusOutput(name string, equipment []EquipmentOutput) BusOutput {
+	bus := BusOutput{
+		Name:      name,
+		Equipment: equipment,
 	}
 
-	group.TotalQuantity = totalQuantity
-	group.TotalPower = totalPower
+	// Calculate total values
+	var totalPowerNominal float64 = 0
+	var totalPowerWithUsage float64 = 0
+	var totalReactivePower float64 = 0
+	var totalPowerSquared float64 = 0
 
-	// Розрахунок групового коефіцієнта використання
-	if totalPower > 0 {
-		group.UsageFactor = totalPowerUsage / totalPower
+	for _, eq := range equipment {
+		totalPowerNominal += eq.PowerTotal
+		totalPowerWithUsage += eq.PowerWithUsage
+		totalReactivePower += eq.ReactivePower
+		totalPowerSquared += eq.PowerSquared
 	}
 
-	// Розрахунок ефективної кількості пристроїв
-	if totalPowerSquared > 0 {
-		group.EffectiveDeviceCount = math.Pow(totalPower, 2) / totalPowerSquared
-	}
+	// Calculate КВ - груповий коефіцієнт використання
+	bus.UsageCoefGroup = totalPowerWithUsage / totalPowerNominal
 
-	// Визначення розрахункового коефіцієнта активної потужності
-	group.PowerFactor = CalculatePowerFactor(group.UsageFactor, group.EffectiveDeviceCount, false)
+	// Calculate ne - ефективна кількість ЕП
+	bus.EffectiveQuantity = math.Pow(totalPowerNominal, 2) / totalPowerSquared
+	bus.EffectiveQuantityRounded = int(bus.EffectiveQuantity)
 
-	// Розрахунок розрахункового активного навантаження
-	if group.EffectiveDeviceCount <= 10 {
-		group.ActivePower = group.PowerFactor * totalPowerUsage
+	// Lookup Kр - розрахунковий коефіцієнт активної потужності
+	bus.PowerCoef = LookupPowerCoef(bus.UsageCoefGroup, bus.EffectiveQuantityRounded, false)
+
+	// Calculate Pp - розрахункове активне навантаження
+	bus.ActivePower = bus.PowerCoef * totalPowerWithUsage
+
+	// Calculate Qp - розрахункове реактивне навантаження
+	// For ne <= 10, Qp = 1.1 * total reactive power, otherwise Qp = total reactive power
+	if bus.EffectiveQuantityRounded <= 10 {
+		bus.ReactivePower = 1.1 * totalReactivePower
 	} else {
-		group.ActivePower = totalPowerUsage
+		bus.ReactivePower = totalReactivePower
 	}
 
-	// Розрахунок розрахункового реактивного навантаження
-	if group.EffectiveDeviceCount <= 10 {
-		group.ReactivePower = 1.1 * totalPowerUsageReactive
-	} else {
-		group.ReactivePower = totalPowerUsageReactive
+	// Calculate Sp - повна потужність
+	bus.ApparentPower = math.Sqrt(math.Pow(bus.ActivePower, 2) + math.Pow(bus.ReactivePower, 2))
+
+	// Calculate Ip - розрахунковий груповий струм (using voltage of the first equipment for simplicity)
+	if len(equipment) > 0 {
+		bus.BusCurrent = bus.ActivePower / equipment[0].Voltage
 	}
 
-	// Розрахунок повної потужності
-	group.TotalPowerApparent = math.Sqrt(math.Pow(group.ActivePower, 2) + math.Pow(group.ReactivePower, 2))
-
-	// Розрахунок групового струму
-	if devices[0].Voltage > 0 {
-		group.GroupCurrent = group.ActivePower / devices[0].Voltage
-	}
-
-	return group
+	return bus
 }
 
-// CalculateTotalData обчислює загальні дані для всіх груп
-func CalculateTotalData(groups []GroupCalculation) TotalCalculation {
-	var total TotalCalculation
-	total.Groups = groups
+// CalculateWorkshopOutput calculates parameters for the entire workshop
+func CalculateWorkshopOutput(buses []BusOutput, largeEquipment []EquipmentOutput) WorkshopOutput {
+	workshop := WorkshopOutput{
+		Buses:          buses,
+		LargeEquipment: largeEquipment,
+	}
 
-	totalQuantity := 0
-	totalPower := 0.0
-	totalPowerUsage := 0.0
-	totalPowerUsageReactive := 0.0
-	totalPowerSquared := 0.0
+	// Calculate totals across all buses and large equipment
+	var totalPowerNominal float64 = 0
+	var totalPowerWithUsage float64 = 0
+	var totalPowerSquared float64 = 0
 
-	for _, group := range groups {
-		totalQuantity += group.TotalQuantity
-		totalPower += group.TotalPower
-
-		for _, device := range group.Devices {
-			totalPowerUsage += device.NPowerUsage
-			totalPowerUsageReactive += device.NPowerUsageReactive
-			totalPowerSquared += device.NPowerSquared
+	for _, bus := range buses {
+		for _, eq := range bus.Equipment {
+			totalPowerNominal += eq.PowerTotal
+			totalPowerWithUsage += eq.PowerWithUsage
+			totalPowerSquared += eq.PowerSquared
 		}
 	}
 
-	total.TotalQuantity = totalQuantity
-	total.TotalPower = totalPower
-
-	// Розрахунок коефіцієнта використання цеху в цілому
-	if totalPower > 0 {
-		total.UsageFactor = totalPowerUsage / totalPower
+	for _, eq := range largeEquipment {
+		totalPowerNominal += eq.PowerTotal
+		totalPowerWithUsage += eq.PowerWithUsage
+		totalPowerSquared += eq.PowerSquared
 	}
 
-	// Розрахунок ефективної кількості пристроїв цеху
-	if totalPowerSquared > 0 {
-		total.EffectiveDeviceCount = math.Pow(totalPower, 2) / totalPowerSquared
+	// Calculate КВ - загальний коефіцієнт використання
+	workshop.UsageCoefTotal = totalPowerWithUsage / totalPowerNominal
+
+	// Calculate ne - загальна ефективна кількість ЕП
+	workshop.EffectiveQuantityTotal = math.Pow(totalPowerNominal, 2) / totalPowerSquared
+	workshop.EffectiveQuantityTotalRounded = int(workshop.EffectiveQuantityTotal)
+
+	// Lookup Kр - загальний розрахунковий коефіцієнт активної потужності (for transformer)
+	workshop.PowerCoefTotal = LookupPowerCoef(workshop.UsageCoefTotal, workshop.EffectiveQuantityTotalRounded, true)
+
+	// Calculate reactive power for all large equipment
+	var totalLargeReactivePower float64 = 0
+	for _, eq := range largeEquipment {
+		totalLargeReactivePower += eq.ReactivePower
 	}
 
-	// Визначення розрахункового коефіцієнта активної потужності цеху
-	total.PowerFactor = CalculatePowerFactor(total.UsageFactor, total.EffectiveDeviceCount, true)
+	// Calculate total active and reactive power from buses
+	var totalBusActivePower float64 = 0
+	var totalBusReactivePower float64 = 0
+	for _, bus := range buses {
+		totalBusActivePower += bus.ActivePower
+		totalBusReactivePower += bus.ReactivePower
+	}
 
-	// Розрахунок розрахункового активного навантаження цеху
-	total.ActivePower = total.PowerFactor * totalPowerUsage
+	// Calculate Pp - загальне розрахункове активне навантаження
+	workshop.ActivePowerTotal = workshop.PowerCoefTotal * (totalPowerWithUsage)
 
-	// Розрахунок розрахункового реактивного навантаження цеху
-	total.ReactivePower = total.PowerFactor * totalPowerUsageReactive
-
-	// Розрахунок повної потужності цеху
-	total.TotalPowerApparent = math.Sqrt(math.Pow(total.ActivePower, 2) + math.Pow(total.ReactivePower, 2))
-
-	// Розрахунок загального струму цеху
-	if len(groups) > 0 && len(groups[0].Devices) > 0 {
-		voltage := groups[0].Devices[0].Device.Voltage
-		if voltage > 0 {
-			total.TotalCurrent = total.ActivePower / voltage
+	// Calculate Qp - загальне розрахункове реактивне навантаження
+	totalReactivePowerWithUsage := 0.0
+	for _, bus := range buses {
+		for _, eq := range bus.Equipment {
+			totalReactivePowerWithUsage += eq.ReactivePower
 		}
 	}
+	for _, eq := range largeEquipment {
+		totalReactivePowerWithUsage += eq.ReactivePower
+	}
+	workshop.ReactivePowerTotal = workshop.PowerCoefTotal * totalReactivePowerWithUsage
 
-	return total
+	// Calculate Sp - загальна повна потужність
+	workshop.ApparentPowerTotal = math.Sqrt(math.Pow(workshop.ActivePowerTotal, 2) + math.Pow(workshop.ReactivePowerTotal, 2))
+
+	// Calculate Ip - загальний розрахунковий струм (using voltage of the first equipment for simplicity)
+	if len(buses) > 0 && len(buses[0].Equipment) > 0 {
+		workshop.TotalCurrent = workshop.ActivePowerTotal / buses[0].Equipment[0].Voltage
+	}
+
+	return workshop
 }
 
-// IndexHandler показує головну сторінку
-func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("templates/index.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+func handleCalculate(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		err := r.ParseForm()
+		if err != nil {
+			http.Error(w, "Cannot parse form", http.StatusBadRequest)
+			return
+		}
+
+		// Example: Process data for the first bus (ШР1)
+		sr1Equipment := []EquipmentInput{
+			{
+				Name:              "Шліфувальний верстат (1-4)",
+				Efficiency:        parseFloat(r.FormValue("efficiency_1"), 0.92),
+				PowerFactor:       parseFloat(r.FormValue("power_factor_1"), 0.9),
+				Voltage:           parseFloat(r.FormValue("voltage_1"), 0.38),
+				Quantity:          parseInt(r.FormValue("quantity_1"), 4),
+				Power:             parseFloat(r.FormValue("power_1"), 20),
+				UsageCoef:         parseFloat(r.FormValue("usage_coef_1"), 0.15),
+				ReactivePowerCoef: parseFloat(r.FormValue("reactive_power_coef_1"), 1.33),
+			},
+			{
+				Name:              "Свердлильний верстат (5-6)",
+				Efficiency:        parseFloat(r.FormValue("efficiency_2"), 0.92),
+				PowerFactor:       parseFloat(r.FormValue("power_factor_2"), 0.9),
+				Voltage:           parseFloat(r.FormValue("voltage_2"), 0.38),
+				Quantity:          parseInt(r.FormValue("quantity_2"), 2),
+				Power:             parseFloat(r.FormValue("power_2"), 14),
+				UsageCoef:         parseFloat(r.FormValue("usage_coef_2"), 0.12),
+				ReactivePowerCoef: parseFloat(r.FormValue("reactive_power_coef_2"), 1.0),
+			},
+			// Add all other equipment for ШР1...
+			{
+				Name:              "Фугувальний верстат (9-12)",
+				Efficiency:        0.92,
+				PowerFactor:       0.9,
+				Voltage:           0.38,
+				Quantity:          4,
+				Power:             42,
+				UsageCoef:         0.15,
+				ReactivePowerCoef: 1.33,
+			},
+			{
+				Name:              "Циркулярна пила (13)",
+				Efficiency:        0.92,
+				PowerFactor:       0.9,
+				Voltage:           0.38,
+				Quantity:          1,
+				Power:             36,
+				UsageCoef:         0.3,
+				ReactivePowerCoef: 1.52,
+			},
+			{
+				Name:              "Прес (16)",
+				Efficiency:        0.92,
+				PowerFactor:       0.9,
+				Voltage:           0.38,
+				Quantity:          1,
+				Power:             20,
+				UsageCoef:         0.5,
+				ReactivePowerCoef: 0.75,
+			},
+			{
+				Name:              "Полірувальний верстат (24)",
+				Efficiency:        0.92,
+				PowerFactor:       0.9,
+				Voltage:           0.38,
+				Quantity:          1,
+				Power:             40,
+				UsageCoef:         0.2,
+				ReactivePowerCoef: 1.0,
+			},
+			{
+				Name:              "Фрезерний верстат (26-27)",
+				Efficiency:        0.92,
+				PowerFactor:       0.9,
+				Voltage:           0.38,
+				Quantity:          2,
+				Power:             32,
+				UsageCoef:         0.2,
+				ReactivePowerCoef: 1.0,
+			},
+			{
+				Name:              "Вентилятор (36)",
+				Efficiency:        0.92,
+				PowerFactor:       0.9,
+				Voltage:           0.38,
+				Quantity:          1,
+				Power:             20,
+				UsageCoef:         0.65,
+				ReactivePowerCoef: 0.75,
+			},
+		}
+
+		// Process data for large equipment connected directly to the transformer
+		largeEquipment := []EquipmentInput{
+			{
+				Name:              "Зварювальний трансформатор",
+				Efficiency:        0.92,
+				PowerFactor:       0.9,
+				Voltage:           0.38,
+				Quantity:          2,
+				Power:             100,
+				UsageCoef:         0.2,
+				ReactivePowerCoef: 3.0,
+			},
+			{
+				Name:              "Сушильна шафа",
+				Efficiency:        0.92,
+				PowerFactor:       0.9,
+				Voltage:           0.38,
+				Quantity:          2,
+				Power:             120,
+				UsageCoef:         0.8,
+				ReactivePowerCoef: 0.0, // No reactive power
+			},
+		}
+
+		// Process equipment for ШР1
+		sr1EquipmentOutput := make([]EquipmentOutput, len(sr1Equipment))
+		for i, eq := range sr1Equipment {
+			sr1EquipmentOutput[i] = CalculateEquipmentOutput(eq)
+		}
+
+		// Process large equipment
+		largeEquipmentOutput := make([]EquipmentOutput, len(largeEquipment))
+		for i, eq := range largeEquipment {
+			largeEquipmentOutput[i] = CalculateEquipmentOutput(eq)
+		}
+
+		// Calculate ШР1 parameters
+		sr1Output := CalculateBusOutput("ШР1", sr1EquipmentOutput)
+
+		// For simplicity, assume ШР2 and ШР3 are identical to ШР1
+		sr2Output := sr1Output
+		sr2Output.Name = "ШР2"
+		sr3Output := sr1Output
+		sr3Output.Name = "ШР3"
+
+		buses := []BusOutput{sr1Output, sr2Output, sr3Output}
+
+		// Calculate workshop parameters
+		workshopOutput := CalculateWorkshopOutput(buses, largeEquipmentOutput)
+
+		// Render results
+		tmpl, err := template.ParseFiles("templates/results.html")
+		if err != nil {
+			http.Error(w, "Template error", http.StatusInternalServerError)
+			return
+		}
+
+		err = tmpl.Execute(w, workshopOutput)
+		if err != nil {
+			http.Error(w, "Template execution error", http.StatusInternalServerError)
+			return
+		}
+
 		return
 	}
 
-	tmpl.Execute(w, nil)
+	// If not POST, show the form
+	tmpl, err := template.ParseFiles("templates/form.html")
+	if err != nil {
+		http.Error(w, "Template error", http.StatusInternalServerError)
+		return
+	}
+
+	err = tmpl.Execute(w, nil)
+	if err != nil {
+		http.Error(w, "Template execution error", http.StatusInternalServerError)
+		return
+	}
 }
 
-// CalculateHandler обробляє POST-запит з даними для розрахунку
-func CalculateHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
+// Helper function to parse float values with default
+func parseFloat(value string, defaultValue float64) float64 {
+	if value == "" {
+		return defaultValue
 	}
 
-	// Парсинг форми
-	err := r.ParseForm()
+	f, err := strconv.ParseFloat(value, 64)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return defaultValue
 	}
 
-	// Отримання кількості пристроїв
-	deviceCountStr := r.FormValue("deviceCount")
-	deviceCount, err := strconv.Atoi(deviceCountStr)
+	return f
+}
+
+// Helper function to parse int values with default
+func parseInt(value string, defaultValue int) int {
+	if value == "" {
+		return defaultValue
+	}
+
+	i, err := strconv.Atoi(value)
 	if err != nil {
-		deviceCount = 0
+		return defaultValue
 	}
 
-	// Створення слайсу пристроїв для трьох груп (ШР1, ШР2, ШР3)
-	devicesGroup1 := make([]ElectricalDevice, deviceCount)
-
-	// Заповнення даних пристроїв для ШР1
-	for i := 0; i < deviceCount; i++ {
-		efficiency, _ := strconv.ParseFloat(r.FormValue(fmt.Sprintf("efficiency_%d", i)), 64)
-		powerFactor, _ := strconv.ParseFloat(r.FormValue(fmt.Sprintf("powerFactor_%d", i)), 64)
-		voltage, _ := strconv.ParseFloat(r.FormValue(fmt.Sprintf("voltage_%d", i)), 64)
-		quantity, _ := strconv.Atoi(r.FormValue(fmt.Sprintf("quantity_%d", i)))
-		power, _ := strconv.ParseFloat(r.FormValue(fmt.Sprintf("power_%d", i)), 64)
-		usageFactor, _ := strconv.ParseFloat(r.FormValue(fmt.Sprintf("usageFactor_%d", i)), 64)
-		reactiveFactor, _ := strconv.ParseFloat(r.FormValue(fmt.Sprintf("reactiveFactor_%d", i)), 64)
-
-		devicesGroup1[i] = ElectricalDevice{
-			Name:           r.FormValue(fmt.Sprintf("name_%d", i)),
-			Efficiency:     efficiency,
-			PowerFactor:    powerFactor,
-			Voltage:        voltage,
-			Quantity:       quantity,
-			Power:          power,
-			UsageFactor:    usageFactor,
-			ReactiveFactor: reactiveFactor,
-		}
-	}
-
-	// Для спрощення приймаємо, що ШР2 і ШР3 ідентичні ШР1
-	devicesGroup2 := make([]ElectricalDevice, len(devicesGroup1))
-	devicesGroup3 := make([]ElectricalDevice, len(devicesGroup1))
-	copy(devicesGroup2, devicesGroup1)
-	copy(devicesGroup3, devicesGroup1)
-
-	// Отримання даних для крупних ЕП
-	largeDeviceCountStr := r.FormValue("largeDeviceCount")
-	largeDeviceCount, err := strconv.Atoi(largeDeviceCountStr)
-	if err != nil {
-		largeDeviceCount = 0
-	}
-
-	largeDevices := make([]ElectricalDevice, largeDeviceCount)
-
-	// Заповнення даних крупних ЕП
-	for i := 0; i < largeDeviceCount; i++ {
-		efficiency, _ := strconv.ParseFloat(r.FormValue(fmt.Sprintf("large_efficiency_%d", i)), 64)
-		powerFactor, _ := strconv.ParseFloat(r.FormValue(fmt.Sprintf("large_powerFactor_%d", i)), 64)
-		voltage, _ := strconv.ParseFloat(r.FormValue(fmt.Sprintf("large_voltage_%d", i)), 64)
-		quantity, _ := strconv.Atoi(r.FormValue(fmt.Sprintf("large_quantity_%d", i)))
-		power, _ := strconv.ParseFloat(r.FormValue(fmt.Sprintf("large_power_%d", i)), 64)
-		usageFactor, _ := strconv.ParseFloat(r.FormValue(fmt.Sprintf("large_usageFactor_%d", i)), 64)
-		reactiveFactor, _ := strconv.ParseFloat(r.FormValue(fmt.Sprintf("large_reactiveFactor_%d", i)), 64)
-
-		largeDevices[i] = ElectricalDevice{
-			Name:           r.FormValue(fmt.Sprintf("large_name_%d", i)),
-			Efficiency:     efficiency,
-			PowerFactor:    powerFactor,
-			Voltage:        voltage,
-			Quantity:       quantity,
-			Power:          power,
-			UsageFactor:    usageFactor,
-			ReactiveFactor: reactiveFactor,
-		}
-	}
-
-	// Розрахунок даних для груп
-	group1 := CalculateGroupData(devicesGroup1, "ШР1")
-	group2 := CalculateGroupData(devicesGroup2, "ШР2")
-	group3 := CalculateGroupData(devicesGroup3, "ШР3")
-	largeGroup := CalculateGroupData(largeDevices, "Крупні ЕП")
-
-	// Об'єднання груп для загального розрахунку
-	groups := []GroupCalculation{group1, group2, group3, largeGroup}
-	total := CalculateTotalData(groups)
-
-	// Відправка результатів у форматі JSON
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(total)
+	return i
 }
 
 func main() {
-	// Вказуємо де шукати статичні файли
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	// Serve static files from the "static" directory
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	// Обробники запитів
-	http.HandleFunc("/", IndexHandler)
-	http.HandleFunc("/calculate", CalculateHandler)
+	// Handle the calculator page
+	http.HandleFunc("/", handleCalculate)
 
-	// Запуск сервера
-	fmt.Println("Server is running on http://localhost:8080")
+	log.Println("Server started at http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результати розрахунку електричних навантажень</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Результати розрахунку електричних навантажень</h1>
+        
+        {{range .Buses}}
+        <div class="results-panel">
+            <h2>Розподільча шина {{.Name}}</h2>
+            
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Найменування ЕП</th>
+                        <th>ηн</th>
+                        <th>cos φ</th>
+                        <th>Uн, кВ</th>
+                        <th>n, шт</th>
+                        <th>Pн, кВт</th>
+                        <th>n·Pн, кВт</th>
+                        <th>КВ</th>
+                        <th>tgφ</th>
+                        <th>n·Pн·КВ, кВт</th>
+                        <th>n·Pн·КВ·tgφ, квар</th>
+                        <th>n·Pн², кВт²</th>
+                        <th>Ip, A</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Equipment}}
+                    <tr>
+                        <td>{{.Name}}</td>
+                        <td>{{printf "%.2f" .Efficiency}}</td>
+                        <td>{{printf "%.2f" .PowerFactor}}</td>
+                        <td>{{printf "%.2f" .Voltage}}</td>
+                        <td>{{.Quantity}}</td>
+                        <td>{{printf "%.1f" .Power}}</td>
+                        <td>{{printf "%.1f" .PowerTotal}}</td>
+                        <td>{{printf "%.2f" .UsageCoef}}</td>
+                        <td>{{printf "%.2f" .ReactivePowerCoef}}</td>
+                        <td>{{printf "%.1f" .PowerWithUsage}}</td>
+                        <td>{{printf "%.1f" .ReactivePower}}</td>
+                        <td>{{printf "%.0f" .PowerSquared}}</td>
+                        <td>{{printf "%.1f" .CurrentRated}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+                <tfoot>
+                    <tr class="total-row">
+                        <td colspan="5">Всього по {{.Name}}:</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>{{printf "%.4f" .UsageCoefGroup}}</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                </tfoot>
+            </table>
+            
+            <div class="calculated-params">
+                <h3>Розрахункові параметри {{.Name}}:</h3>
+                <div class="param-grid">
+                    <div class="param">
+                        <span class="param-label">Ефективна кількість ЕП (ne):</span>
+                        <span class="param-value">{{printf "%.2f" .EffectiveQuantity}} ≈ {{.EffectiveQuantityRounded}}</span>
+                    </div>
+                    <div class="param">
+                        <span class="param-label">Розрахунковий коефіцієнт (Kр):</span>
+                        <span class="param-value">{{printf "%.2f" .PowerCoef}}</span>
+                    </div>
+                    <div class="param">
+                        <span class="param-label">Активна потужність (Pp):</span>
+                        <span class="param-value">{{printf "%.2f" .ActivePower}} кВт</span>
+                    </div>
+                    <div class="param">
+                        <span class="param-label">Реактивна потужність (Qp):</span>
+                        <span class="param-value">{{printf "%.2f" .ReactivePower}} квар</span>
+                    </div>
+                    <div class="param">
+                        <span class="param-label">Повна потужність (Sp):</span>
+                        <span class="param-value">{{printf "%.2f" .ApparentPower}} кВА</span>
+                    </div>
+                    <div class="param">
+                        <span class="param-label">Розрахунковий струм (Ip):</span>
+                        <span class="param-value">{{printf "%.2f" .BusCurrent}} А</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{end}}
+        
+        <!-- Large Equipment -->
+        <div class="results-panel">
+            <h2>Крупні ЕП, що живляться від ТП</h2>
+            
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Найменування ЕП</th>
+                        <th>ηн</th>
+                        <th>cos φ</th>
+                        <th>Uн, кВ</th>
+                        <th>n, шт</th>
+                        <th>Pн, кВт</th>
+                        <th>n·Pн, кВт</th>
+                        <th>КВ</th>
+                        <th>tgφ</th>
+                        <th>n·Pн·КВ, кВт</th>
+                        <th>n·Pн·КВ·tgφ, квар</th>
+                        <th>n·Pн², кВт²</th>
+                        <th>Ip, A</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .LargeEquipment}}
+                    <tr>
+                        <td>{{.Name}}</td>
+                        <td>{{printf "%.2f" .Efficiency}}</td>
+                        <td>{{printf "%.2f" .PowerFactor}}</td>
+                        <td>{{printf "%.2f" .Voltage}}</td>
+                        <td>{{.Quantity}}</td>
+                        <td>{{printf "%.1f" .Power}}</td>
+                        <td>{{printf "%.1f" .PowerTotal}}</td>
+                        <td>{{printf "%.2f" .UsageCoef}}</td>
+                        <td>{{printf "%.2f" .ReactivePowerCoef}}</td>
+                        <td>{{printf "%.1f" .PowerWithUsage}}</td>
+                        <td>{{printf "%.1f" .ReactivePower}}</td>
+                        <td>{{printf "%.0f" .PowerSquared}}</td>
+                        <td>{{printf "%.1f" .CurrentRated}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Workshop Total -->
+        <div class="results-panel workshop-total">
+            <h2>Всього по цеху</h2>
+            
+            <div class="calculated-params">
+                <div class="param-grid">
+                    <div class="param">
+                        <span class="param-label">Коефіцієнт використання (КВ):</span>
+                        <span class="param-value">{{printf "%.2f" .UsageCoefTotal}}</span>
+                    </div>
+                    <div class="param">
+                        <span class="param-label">Ефективна кількість ЕП (ne):</span>
+                        <span class="param-value">{{printf "%.2f" .EffectiveQuantityTotal}} ≈ {{.EffectiveQuantityTotalRounded}}</span>
+                    </div>
+                    <div class="param">
+                        <span class="param-label">Розрахунковий коефіцієнт (Kр):</span>
+                        <span class="param-value">{{printf "%.2f" .PowerCoefTotal}}</span>
+                    </div>
+                    <div class="param">
+                        <span class="param-label">Активна потужність (Pp):</span>
+                        <span class="param-value">{{printf "%.2f" .ActivePowerTotal}} кВт</span>
+                    </div>
+                    <div class="param">
+                        <span class="param-label">Реактивна потужність (Qp):</span>
+                        <span class="param-value">{{printf "%.2f" .ReactivePowerTotal}} квар</span>
+                    </div>
+                    <div class="param">
+                        <span class="param-label">Повна потужність (Sp):</span>
+                        <span class="param-value">{{printf "%.2f" .ApparentPowerTotal}} кВА</span>
+                    </div>
+                    <div class="param">
+                        <span class="param-label">Розрахунковий струм (Ip):</span>
+                        <span class="param-value">{{printf "%.2f" .TotalCurrent}} А</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <a href="/" class="btn-back">Повернутися до форми</a>
+        </div>
+    </div>
+</body>
+</html>

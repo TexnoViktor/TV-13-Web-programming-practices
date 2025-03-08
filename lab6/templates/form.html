@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор електричних навантажень</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Калькулятор електричних навантажень об'єктів</h1>
+        <h2>Метод упорядкованих діаграм</h2>
+        
+        <form action="/" method="post">
+            <div class="panel">
+                <h3>ШР1 - Електроприймачі</h3>
+                
+                <div class="equipment-group">
+                    <h4>Шліфувальний верстат (1-4)</h4>
+                    <div class="equipment-inputs">
+                        <div class="form-group">
+                            <label>ηн (ККД)</label>
+                            <input type="number" step="0.01" name="efficiency_1" value="0.92" required>
+                        </div>
+                        <div class="form-group">
+                            <label>cos φ</label>
+                            <input type="number" step="0.01" name="power_factor_1" value="0.9" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Uн, кВ</label>
+                            <input type="number" step="0.01" name="voltage_1" value="0.38" required>
+                        </div>
+                        <div class="form-group">
+                            <label>n, шт</label>
+                            <input type="number" name="quantity_1" value="4" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Pн, кВт</label>
+                            <input type="number" step="0.1" name="power_1" value="20" required>
+                        </div>
+                        <div class="form-group">
+                            <label>КВ</label>
+                            <input type="number" step="0.01" name="usage_coef_1" value="0.15" required>
+                        </div>
+                        <div class="form-group">
+                            <label>tgφ</label>
+                            <input type="number" step="0.01" name="reactive_power_coef_1" value="1.33" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="equipment-group">
+                    <h4>Свердлильний верстат (5-6)</h4>
+                    <div class="equipment-inputs">
+                        <div class="form-group">
+                            <label>ηн (ККД)</label>
+                            <input type="number" step="0.01" name="efficiency_2" value="0.92" required>
+                        </div>
+                        <div class="form-group">
+                            <label>cos φ</label>
+                            <input type="number" step="0.01" name="power_factor_2" value="0.9" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Uн, кВ</label>
+                            <input type="number" step="0.01" name="voltage_2" value="0.38" required>
+                        </div>
+                        <div class="form-group">
+                            <label>n, шт</label>
+                            <input type="number" name="quantity_2" value="2" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Pн, кВт</label>
+                            <input type="number" step="0.1" name="power_2" value="14" required>
+                        </div>
+                        <div class="form-group">
+                            <label>КВ</label>
+                            <input type="number" step="0.01" name="usage_coef_2" value="0.12" required>
+                        </div>
+                        <div class="form-group">
+                            <label>tgφ</label>
+                            <input type="number" step="0.01" name="reactive_power_coef_2" value="1.0" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Note: For simplicity, other equipment is hardcoded in the Go code -->
+                <p class="note">Примітка: Для спрощення введення даних, інші електроприймачі використовують значення за замовчуванням з контрольного прикладу.</p>
+            </div>
+            
+            <div class="actions">
+                <button type="submit" class="btn-calculate">Розрахувати</button>
+                <button type="reset" class="btn-reset">Скинути</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
