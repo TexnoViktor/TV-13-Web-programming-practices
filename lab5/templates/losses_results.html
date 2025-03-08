@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container results-container">
+        <h1>Результати розрахунку збитків від перерв електропостачання</h1>
+        
+        <div class="results-section">
+            <h2>Математичне сподівання збитків від переривання електропостачання</h2>
+            <table class="results-table">
+                <tr>
+                    <th>Параметр</th>
+                    <th>Значення</th>
+                </tr>
+                <tr>
+                    <td>Математичне сподівання аварійного недовідпущення електроенергії M(W<sub>нед.а</sub>), кВт·год</td>
+                    <td>{{printf "%.2f" .LossesResults.EmergencyNonSupply}}</td>
+                </tr>
+                <tr>
+                    <td>Математичне сподівання планового недовідпущення електроенергії M(W<sub>нед.п</sub>), кВт·год</td>
+                    <td>{{printf "%.2f" .LossesResults.PlannedNonSupply}}</td>
+                </tr>
+                <tr>
+                    <td>Загальне математичне сподівання збитків від переривання електропостачання M(З<sub>пер</sub>), грн</td>
+                    <td>{{printf "%.2f" .LossesResults.TotalLosses}}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="conclusion">
+            <h2>Висновок</h2>
+            <p>
+                Математичне сподівання аварійного недовідпущення електроенергії становить 
+                {{printf "%.2f" .LossesResults.EmergencyNonSupply}} кВт·год, 
+                а планового недовідпущення - {{printf "%.2f" .LossesResults.PlannedNonSupply}} кВт·год.
+            </p>
+            <p>
+                Загальні збитки від переривання електропостачання становлять 
+                {{printf "%.2f" .LossesResults.TotalLosses}} грн.
+            </p>
+        </div>
+        
+        <div class="back-button">
+            <a href="/" class="button">Повернутися до калькулятора</a>
+        </div>
+    </div>
+</body>
+</html>

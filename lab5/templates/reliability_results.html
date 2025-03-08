@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container results-container">
+        <h1>Результати порівняння надійності систем електропередачі</h1>
+        
+        <div class="results-section">
+            <h2>Результати розрахунку для одноколової системи</h2>
+            <table class="results-table">
+                <tr>
+                    <th>Параметр</th>
+                    <th>Значення</th>
+                </tr>
+                <tr>
+                    <td>Частота відмов (ω<sub>ос</sub>), рік<sup>-1</sup></td>
+                    <td>{{printf "%.5f" .SingleCircuitResults.FrequencyOfFailures}}</td>
+                </tr>
+                <tr>
+                    <td>Середня тривалість відновлення (t<sub>в.ос</sub>), год</td>
+                    <td>{{printf "%.2f" .SingleCircuitResults.AvgRecoveryTime}}</td>
+                </tr>
+                <tr>
+                    <td>Коефіцієнт аварійного простою (k<sub>а.ос</sub>)</td>
+                    <td>{{printf "%.6f" .SingleCircuitResults.EmergencyDowntimeCoefficient}}</td>
+                </tr>
+                <tr>
+                    <td>Коефіцієнт планового простою (k<sub>п.ос</sub>)</td>
+                    <td>{{printf "%.6f" .SingleCircuitResults.PlannedDowntimeCoefficient}}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="results-section">
+            <h2>Результати розрахунку для двоколової системи</h2>
+            <table class="results-table">
+                <tr>
+                    <th>Параметр</th>
+                    <th>Значення</th>
+                </tr>
+                <tr>
+                    <td>Частота одночасної відмови двох кіл (ω<sub>дк</sub>), рік<sup>-1</sup></td>
+                    <td>{{printf "%.6f" .DoubleCircuitResults.SimultaneousFailureFreq}}</td>
+                </tr>
+                <tr>
+                    <td>Загальна частота відмов з урахуванням секційного вимикача (ω<sub>дс</sub>), рік<sup>-1</sup></td>
+                    <td>{{printf "%.5f" .DoubleCircuitResults.TotalFrequencyOfFailures}}</td>
+                </tr>
+                <tr>
+                    <td>Середня тривалість відновлення (t<sub>в.дк</sub>), год</td>
+                    <td>{{printf "%.2f" .DoubleCircuitResults.AvgRecoveryTimeDC}}</td>
+                </tr>
+                <tr>
+                    <td>Коефіцієнт аварійного простою (k<sub>а.дс</sub>)</td>
+                    <td>{{printf "%.6f" .DoubleCircuitResults.EmergencyDowntimeCoefficientDC}}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="conclusion">
+            <h2>Висновок</h2>
+            <p>
+                {{if lt .DoubleCircuitResults.TotalFrequencyOfFailures .SingleCircuitResults.FrequencyOfFailures}}
+                Двоколова система електропередачі має вищу надійність, оскільки частота відмов двоколової системи 
+                ({{printf "%.5f" .DoubleCircuitResults.TotalFrequencyOfFailures}} рік<sup>-1</sup>) 
+                менша за частоту відмов одноколової системи ({{printf "%.5f" .SingleCircuitResults.FrequencyOfFailures}} рік<sup>-1</sup>).
+                {{else}}
+                Одноколова система електропередачі має вищу надійність, оскільки частота відмов одноколової системи 
+                ({{printf "%.5f" .SingleCircuitResults.FrequencyOfFailures}} рік<sup>-1</sup>) 
+                менша за частоту відмов двоколової системи ({{printf "%.5f" .DoubleCircuitResults.TotalFrequencyOfFailures}} рік<sup>-1</sup>).
+                {{end}}
+            </p>
+        </div>
+        
+        <div class="back-button">
+            <a href="/" class="button">Повернутися до калькулятора</a>
+        </div>
+    </div>
+</body>
+</html>

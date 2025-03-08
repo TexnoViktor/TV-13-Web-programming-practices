@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Веб калькулятор для порівняння надійності систем електропередачі</h1>
+        
+        {{if .ErrorMessage}}
+        <div class="error-message">
+            <p>{{.ErrorMessage}}</p>
+        </div>
+        {{end}}
+
+        <div class="tabs">
+            <button class="tablink" onclick="openTab('reliability')">Порівняння надійності систем</button>
+            <button class="tablink" onclick="openTab('losses')">Розрахунок збитків</button>
+        </div>
+
+        <div id="reliability" class="tabcontent">
+            <h2>Порівняння надійності одноколової та двоколової систем</h2>
+            <form action="/calculate-reliability" method="post">
+                <div class="form-section">
+                    <h3>Параметри елементів одноколової системи</h3>
+                    
+                    <div class="form-group">
+                        <label>Елегазовий вимикач 110 кВ</label>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="w_B110kV">ω, рік⁻¹</label>
+                                <input type="number" id="w_B110kV" name="w_B110kV" step="0.001" value="0.01" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="t_B110kV">tв, год</label>
+                                <input type="number" id="t_B110kV" name="t_B110kV" step="0.1" value="30" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>ПЛ-110 кВ (10 км)</label>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="w_PL110kV">ω, рік⁻¹</label>
+                                <input type="number" id="w_PL110kV" name="w_PL110kV" step="0.001" value="0.07" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="t_PL110kV">tв, год</label>
+                                <input type="number" id="t_PL110kV" name="t_PL110kV" step="0.1" value="10" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Трансформатор 110/10 кВ</label>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="w_T110_10kV">ω, рік⁻¹</label>
+                                <input type="number" id="w_T110_10kV" name="w_T110_10kV" step="0.001" value="0.015" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="t_T110_10kV">tв, год</label>
+                                <input type="number" id="t_T110_10kV" name="t_T110_10kV" step="0.1" value="100" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ввідний вимикач 10 кВ</label>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="w_SW10kV">ω, рік⁻¹</label>
+                                <input type="number" id="w_SW10kV" name="w_SW10kV" step="0.001" value="0.02" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="t_SW10kV">tв, год</label>
+                                <input type="number" id="t_SW10kV" name="t_SW10kV" step="0.1" value="15" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Приєднання 10 кВ</label>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="w_Conn10kV">ω, рік⁻¹</label>
+                                <input type="number" id="w_Conn10kV" name="w_Conn10kV" step="0.001" value="0.03" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="t_Conn10kV">tв, год</label>
+                                <input type="number" id="t_Conn10kV" name="t_Conn10kV" step="0.1" value="2" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="numConnections">Кількість приєднань 10 кВ</label>
+                        <input type="number" id="numConnections" name="numConnections" min="1" value="6" required>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Параметри секційного вимикача (для двоколової системи)</h3>
+                    <div class="form-group">
+                        <label for="w_SectSW">Частота відмов секційного вимикача (ω, рік⁻¹)</label>
+                        <input type="number" id="w_SectSW" name="w_SectSW" step="0.001" value="0.02" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-button">Розрахувати</button>
+            </form>
+        </div>
+
+        <div id="losses" class="tabcontent" style="display:none">
+            <h2>Розрахунок збитків від перерв електропостачання</h2>
+            <form action="/calculate-losses" method="post">
+                <div class="form-section">
+                    <h3>Параметри для розрахунку збитків</h3>
+                    
+                    <div class="form-group">
+                        <label for="specificLossesEmergency">Питомі збитки від переривання електропостачання при аварії (грн/кВт·год)</label>
+                        <input type="number" id="specificLossesEmergency" name="specificLossesEmergency" step="0.1" value="23.6" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="specificLossesPlanned">Питомі збитки від переривання електропостачання при планових відключеннях (грн/кВт·год)</label>
+                        <input type="number" id="specificLossesPlanned" name="specificLossesPlanned" step="0.1" value="17.6" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="transformerFailureRate">Частота відмов трансформатора (ω, рік⁻¹)</label>
+                        <input type="number" id="transformerFailureRate" name="transformerFailureRate" step="0.001" value="0.01" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="avgRecoveryTime">Середній час відновлення (tв, роки)</label>
+                        <input type="number" id="avgRecoveryTime" name="avgRecoveryTime" step="0.00001" value="0.00514" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="plannedDowntimeCoef">Коефіцієнт планового простою (kп)</label>
+                        <input type="number" id="plannedDowntimeCoef" name="plannedDowntimeCoef" step="0.0001" value="0.004" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="maxPower">Максимальна потужність (Pм, кВт)</label>
+                        <input type="number" id="maxPower" name="maxPower" step="1" value="5120" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="utilHours">Число годин використання максимуму навантаження (Tм, год)</label>
+                        <input type="number" id="utilHours" name="utilHours" step="1" value="6451" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-button">Розрахувати</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openTab(tabName) {
+            var i, tabcontent, tablinks;
+            
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            
+            tablinks = document.getElementsByClassName("tablink");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            
+            document.getElementById(tabName).style.display = "block";
+            event.currentTarget.className += " active";
+        }
+        
+        // Відкрити вкладку "reliability" за замовчуванням
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelector('.tablink').click();
+        });
+    </script>
+</body>
+</html>
