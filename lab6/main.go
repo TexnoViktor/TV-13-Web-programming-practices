@@ -400,7 +400,7 @@ func CalculatePowerFactor(usageFactor, effectiveDeviceCount float64, isHighLevel
 
 // CalculateDeviceCurrent розраховує струм для одного пристрою
 func CalculateDeviceCurrent(device ElectricalDevice) float64 {
-	return device.Quantity * device.Power / (math.Sqrt(3) * device.Voltage * device.PowerFactor * device.Efficiency)
+	return float64(device.Quantity) * device.Power / (math.Sqrt(3) * device.Voltage * device.PowerFactor * device.Efficiency)
 }
 
 // CalculateGroupData обчислює групові дані для електроприймачів
